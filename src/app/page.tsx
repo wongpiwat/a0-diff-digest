@@ -172,9 +172,10 @@ export default function Home() {
       {showDiff && (
         <div className="mt-8 w-full max-w-4xl">
           <h2 className="text-2xl font-semibold mb-4">Diff Viewer</h2>
-          <pre className="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto">
-            {showDiff}
-          </pre>
+          <pre
+            className="bg-gray-100 p-4 rounded-lg overflow-x-auto overflow-y-auto border border-gray-300 text-sm max-h-96">
+      {showDiff}
+    </pre>
         </div>
       )}
 
