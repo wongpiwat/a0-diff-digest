@@ -26,9 +26,8 @@ export default function Home() {
   const [nextPage, setNextPage] = useState<number | null>(null);
   const [initialFetchDone, setInitialFetchDone] = useState<boolean>(false);
 
-  const [showDiff, setShowDiff] = useState<string | null>(null);
-
-  console.log('Diffs:', diffs);
+  const [diff, setDiff] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
 
   const fetchDiffs = async (page: number) => {
     setIsLoading(true);
@@ -56,6 +55,42 @@ export default function Home() {
       setCurrentPage(data.currentPage);
       setNextPage(data.nextPage);
       if (!initialFetchDone) setInitialFetchDone(true);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : 'An unknown error occurred',
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const generateNotes = async (item: DiffItem) => {
+    setError(null);
+    try {
+      const response = await fetch(`/api/generate-notes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          diff: item.diff,
+        }),
+      });
+      console.log('Page Response', response);
+
+      if (!response.ok) {
+        let errorMsg = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData.error || errorData.details || errorMsg;
+        } catch {
+          console.warn('Failed to parse error response as JSON');
+        }
+        throw new Error(errorMsg);
+      }
+      const data = await response.json();
+      console.log('Generated Notes:', data);
+      setNote(data.output);
     } catch (err: unknown) {
       setError(
         err instanceof Error ? err.message : 'An unknown error occurred',
@@ -135,12 +170,21 @@ export default function Home() {
                   <button
                     className="ml-4 text-sm text-blue-600 dark:text-blue-400 hover:underline"
                     onClick={() => {
-                      setShowDiff(item.diff);
+                      setDiff(item.diff);
                     }}
                   >
                     View Diff
                   </button>
                   {/* This button will show the diff in the viewer below */}
+                  <button
+                    className="ml-4 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                    onClick={() => {
+                      generateNotes(item);
+                    }}
+                  >
+                    Generate Notes
+                  </button>
+
                 </li>
               ))}
             </ul>
@@ -166,15 +210,26 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Notes Section */}
+      {note && (
+        <div className="mt-8 w-full max-w-4xl">
+          <h2 className="text-2xl font-semibold mb-4">Generated Notes</h2>
+          <pre
+            className="bg-gray-100 p-4 rounded-lg overflow-x-auto overflow-y-auto border border-gray-300 text-sm max-h-96">
+            {note}
+          </pre>
+        </div>
+      )}
+
 
       {/* Diff Viewer Section */}
-      {showDiff && (
+      {diff && (
         <div className="mt-8 w-full max-w-4xl">
           <h2 className="text-2xl font-semibold mb-4">Diff Viewer</h2>
           <pre
             className="bg-gray-100 p-4 rounded-lg overflow-x-auto overflow-y-auto border border-gray-300 text-sm max-h-96">
-      {showDiff}
-    </pre>
+            {diff}
+          </pre>
         </div>
       )}
 
