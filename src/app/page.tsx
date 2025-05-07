@@ -1,6 +1,6 @@
-"use client"; // Mark as a Client Component
+'use client'; // Mark as a Client Component
 
-import { useState } from "react";
+import { useState } from 'react';
 
 // Define the expected structure of a diff object
 interface DiffItem {
@@ -26,12 +26,16 @@ export default function Home() {
   const [nextPage, setNextPage] = useState<number | null>(null);
   const [initialFetchDone, setInitialFetchDone] = useState<boolean>(false);
 
+  const [showDiff, setShowDiff] = useState<string | null>(null);
+
+  console.log('Diffs:', diffs);
+
   const fetchDiffs = async (page: number) => {
     setIsLoading(true);
     setError(null);
     try {
       const response = await fetch(
-        `/api/sample-diffs?page=${page}&per_page=10`
+        `/api/sample-diffs?page=${page}&per_page=10`,
       );
       if (!response.ok) {
         let errorMsg = `HTTP error! status: ${response.status}`;
@@ -40,21 +44,21 @@ export default function Home() {
           errorMsg = errorData.error || errorData.details || errorMsg;
         } catch {
           // Ignore if response body is not JSON
-          console.warn("Failed to parse error response as JSON");
+          console.warn('Failed to parse error response as JSON');
         }
         throw new Error(errorMsg);
       }
       const data: ApiResponse = await response.json();
 
       setDiffs((prevDiffs) =>
-        page === 1 ? data.diffs : [...prevDiffs, ...data.diffs]
+        page === 1 ? data.diffs : [...prevDiffs, ...data.diffs],
       );
       setCurrentPage(data.currentPage);
       setNextPage(data.nextPage);
       if (!initialFetchDone) setInitialFetchDone(true);
     } catch (err: unknown) {
       setError(
-        err instanceof Error ? err.message : "An unknown error occurred"
+        err instanceof Error ? err.message : 'An unknown error occurred',
       );
     } finally {
       setIsLoading(false);
@@ -85,13 +89,14 @@ export default function Home() {
             disabled={isLoading}
           >
             {isLoading && currentPage === 1
-              ? "Fetching..."
-              : "Fetch Latest Diffs"}
+              ? 'Fetching...'
+              : 'Fetch Latest Diffs'}
           </button>
         </div>
 
         {/* Results Section */}
-        <div className="border border-gray-300 dark:border-gray-700 rounded-lg p-6 min-h-[300px] bg-gray-50 dark:bg-gray-800">
+        <div
+          className="border border-gray-300 dark:border-gray-700 rounded-lg p-6 min-h-[300px] bg-gray-50 dark:bg-gray-800">
           <h2 className="text-2xl font-semibold mb-4">Merged Pull Requests</h2>
 
           {error && (
@@ -127,6 +132,16 @@ export default function Home() {
                   </a>
                   <span className="ml-2">{item.description}</span>
                   {/* We won't display the full diff here, just the description */}
+                  <button
+                    className="ml-4 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                    onClick={() => {
+                      setShowDiff(item.diff);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                  >
+                    View Diff
+                  </button>
+                  {/* This button will show the diff in the viewer below */}
                 </li>
               ))}
             </ul>
@@ -151,6 +166,18 @@ export default function Home() {
           )}
         </div>
       </div>
+
+
+      {/* Diff Viewer Section */}
+      {showDiff && (
+        <div className="mt-8 w-full max-w-4xl">
+          <h2 className="text-2xl font-semibold mb-4">Diff Viewer</h2>
+          <pre className="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto">
+            {showDiff}
+          </pre>
+        </div>
+      )}
+
     </main>
   );
 }
