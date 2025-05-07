@@ -136,7 +136,6 @@ export default function Home() {
                     className="ml-4 text-sm text-blue-600 dark:text-blue-400 hover:underline"
                     onClick={() => {
                       setShowDiff(item.diff);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                   >
                     View Diff
