@@ -26,7 +26,7 @@ export default function Home() {
   const [nextPage, setNextPage] = useState<number | null>(null);
   const [initialFetchDone, setInitialFetchDone] = useState<boolean>(false);
 
-  const [diff, setDiff] = useState<string | null>(null);
+  const [selectedDiff, setSelectedDiff] = useState<DiffItem | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
   const fetchDiffs = async (page: number) => {
@@ -64,7 +64,9 @@ export default function Home() {
     }
   };
 
+  // Generate notes using the selected diff
   const generateNotes = async (item: DiffItem) => {
+    setIsLoading(true);
     setError(null);
     try {
       const response = await fetch(`/api/generate-notes`, {
@@ -76,21 +78,18 @@ export default function Home() {
           diff: item.diff,
         }),
       });
-      console.log('Page Response', response);
 
-      if (!response.ok) {
-        let errorMsg = `HTTP error! status: ${response.status}`;
-        try {
-          const errorData = await response.json();
-          errorMsg = errorData.error || errorData.details || errorMsg;
-        } catch {
-          console.warn('Failed to parse error response as JSON');
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (reader) {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          setNote((prev) => prev + chunk);
         }
-        throw new Error(errorMsg);
       }
-      const data = await response.json();
-      console.log('Generated Notes:', data);
-      setNote(data.output);
     } catch (err: unknown) {
       setError(
         err instanceof Error ? err.message : 'An unknown error occurred',
@@ -98,6 +97,12 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDiffClick = (item: DiffItem) => {
+    setNote(''); // Clear previous notes when selecting a new diff
+    setSelectedDiff(item);
+    generateNotes(item);
   };
 
   const handleFetchClick = () => {
@@ -166,20 +171,11 @@ export default function Home() {
                     PR #{item.id}:
                   </a>
                   <span className="ml-2">{item.description}</span>
-                  {/* We won't display the full diff here, just the description */}
-                  <button
-                    className="ml-4 text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                    onClick={() => {
-                      setDiff(item.diff);
-                    }}
-                  >
-                    View Diff
-                  </button>
                   {/* This button will show the diff in the viewer below */}
                   <button
                     className="ml-4 text-sm text-blue-600 dark:text-blue-400 hover:underline"
                     onClick={() => {
-                      generateNotes(item);
+                      handleDiffClick(item);
                     }}
                   >
                     Generate Notes
@@ -210,27 +206,26 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Notes Section */}
-      {note && (
-        <div className="mt-8 w-full max-w-4xl">
-          <h2 className="text-2xl font-semibold mb-4">Generated Notes</h2>
-          <pre
-            className="bg-gray-100 p-4 rounded-lg overflow-x-auto overflow-y-auto border border-gray-300 text-sm max-h-96">
+      {selectedDiff && (
+        <>
+          {/* Notes Section */}
+          <div className="mt-8 w-full max-w-4xl">
+            <h2 className="text-2xl font-semibold mb-4">Generated Notes</h2>
+            <pre
+              className="bg-gray-100 p-4 rounded-lg overflow-x-auto overflow-y-auto border border-gray-300 text-sm max-h-96">
             {note}
           </pre>
-        </div>
-      )}
+          </div>
 
-
-      {/* Diff Viewer Section */}
-      {diff && (
-        <div className="mt-8 w-full max-w-4xl">
-          <h2 className="text-2xl font-semibold mb-4">Diff Viewer</h2>
-          <pre
-            className="bg-gray-100 p-4 rounded-lg overflow-x-auto overflow-y-auto border border-gray-300 text-sm max-h-96">
-            {diff}
+          {/* Diff Viewer Section */}
+          <div className="mt-8 w-full max-w-4xl">
+            <h2 className="text-2xl font-semibold mb-4">Diff Viewer</h2>
+            <pre
+              className="bg-gray-100 p-4 rounded-lg overflow-x-auto overflow-y-auto border border-gray-300 text-sm max-h-96">
+            {selectedDiff.diff}
           </pre>
-        </div>
+          </div>
+        </>
       )}
 
     </main>

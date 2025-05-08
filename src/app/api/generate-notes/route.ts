@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   const diff = searchParams.get('diff');
 
   try {
-    const response = await openai.chat.completions.create({
+    const stream = await openai.chat.completions.create({
       model: 'gpt-4.1-mini',
       messages: [
         {
@@ -40,13 +40,27 @@ export async function POST(request: Request) {
         },
       ],
       temperature: 0.3,
+      stream: true
     });
 
-    const summary = response.choices[0].message?.content;
-    console.log('PR Summary:\n', summary);
+    const encoder = new TextEncoder();
+    const readable = new ReadableStream({
+      async start(controller) {
+        for await (const chunk of stream) {
+          const content = chunk.choices[0]?.delta?.content;
+          if (content) {
+            controller.enqueue(encoder.encode(content));
+          }
+        }
+        controller.close();
+      },
+    });
 
-    return NextResponse.json({
-      output: summary,
+    return new Response(readable, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-cache',
+      },
     });
 
   } catch (error) {
