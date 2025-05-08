@@ -175,10 +175,11 @@ export default function Home() {
                   <span className="ml-2">{item.description}</span>
                   {/* This button will show the diff in the viewer below */}
                   <button
-                    className="ml-4 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                    className="ml-4 text-sm text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50"
                     onClick={() => {
                       handleDiffClick(item);
                     }}
+                    disabled={isLoading}
                   >
                     Generate Notes
                   </button>
