@@ -75,7 +75,9 @@ export default function Home() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          description: item.description,
           diff: item.diff,
+          url: item.url,
         }),
       });
 
@@ -208,11 +210,16 @@ export default function Home() {
 
       {selectedDiff && (
         <>
-          {/* Notes Section */}
+          {/* Selected Diff */}
           <div className="mt-8 w-full max-w-4xl">
+            <h2 className="text-2xl font-semibold">PR #{selectedDiff.id}:</h2>
+          </div>
+
+          {/* Notes Section */}
+          <div className="mt-2 w-full max-w-4xl">
             <h2 className="text-2xl font-semibold mb-4">Generated Notes</h2>
             <pre
-              className="bg-gray-100 p-4 rounded-lg overflow-x-auto overflow-y-auto border border-gray-300 text-sm max-h-96">
+              className="bg-gray-100 p-4 rounded-lg overflow-x-auto overflow-y-auto border border-gray-300 text-sm">
             {note}
           </pre>
           </div>

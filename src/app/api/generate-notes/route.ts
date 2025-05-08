@@ -7,11 +7,10 @@ const openai = new OpenAI({
 
 const systemPrompt = `
 You are a senior software engineer and technical writer helping document code changes.
-
-You will be given a git diff from a pull request. Your job is to extract and explain the key changes from two perspectives:
+You will be given a git diff, description, and url from a pull request. Your job is to extract and explain the key changes from two perspectives:
 
 1. 🛠️ Developer Notes  
-   - Focus on what changed and why (technical reasoning).  
+   - Focus on what changed and why.  
    - Mention any refactoring, performance improvements, bug fixes, or architecture decisions.
 
 2. 📣 Marketing Notes  
@@ -23,8 +22,7 @@ Please keep both sections clear and concise.
 `;
 
 export async function POST(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const diff = searchParams.get('diff');
+  const { description, diff, url } = await request.json();
 
   try {
     const stream = await openai.chat.completions.create({
@@ -36,11 +34,11 @@ export async function POST(request: Request) {
         },
         {
           role: 'user',
-          content: `Here is the pull request diff:\n\n${diff}\n\nGenerate the Developer and Marketing notes.`,
+          content: `Here is the pull request diff:\n\n${diff}\n\nDescription: ${description}\nURL: ${url}\n\nGenerate the Developer and Marketing notes.`,
         },
       ],
       temperature: 0.3,
-      stream: true
+      stream: true,
     });
 
     const encoder = new TextEncoder();
